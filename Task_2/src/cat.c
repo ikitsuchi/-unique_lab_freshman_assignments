@@ -5,15 +5,16 @@
 
 int main(int argc, char *argv[]) {
   char *buffer = (char *)malloc(114514);
+  int length;
   if (argc == 1) {
-    while (read(STDIN_FILENO, buffer, 114514) > 0)
-      fwrite(buffer, 114514, 1, stdout);
+    while ((length = read(STDIN_FILENO, buffer, 114514)) > 0)
+      fwrite(buffer, length, 1, stdout);
     return 0;
   }
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-") == 0) {
       while (read(STDIN_FILENO, buffer, 114514) > 0)
-        fwrite(buffer, 114514, 1, stdout);
+        fwrite(buffer, length, 1, stdout);
     } else {
       FILE *fp = fopen(argv[i], "r");
       if (fp != NULL) {
