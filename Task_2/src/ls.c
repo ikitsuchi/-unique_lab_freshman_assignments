@@ -7,6 +7,7 @@
 
 int flag_a = 0;
 int flag_l = 0;
+int dir_num = 0;
 
 int compare(void *x_, void *y_) {
   char *x = *(char **)x_, *y = *(char **)y_;
@@ -31,6 +32,10 @@ int compare(void *x_, void *y_) {
 void listDirectory(char dir[]) {
   int count = 0;
   DIR *d = opendir((dir == NULL) ? "." : dir);
+  if (d == NULL) {
+    fprintf(stderr, "ls: File or directory not found.\n");
+    return;
+  }
   struct dirent *dir_detail;
   char **file_names = NULL;
   while ((dir_detail = readdir(d)) != NULL) {
@@ -42,6 +47,7 @@ void listDirectory(char dir[]) {
   qsort(file_names, count, sizeof(char *), compare);
 
   if (!flag_a && !flag_l) {
+    if (dir_num > 1) fprintf(stdout, "%s:\n", dir);
     for (int i = 0; i < count; ++i) fprintf(stdout, "%s  ", file_names[i]);
     fprintf(stdout, "\n");
   }
@@ -59,6 +65,8 @@ int main(int argc, char *argv[]) {
           flag_l = 1;
         }
       }
+    } else {
+      ++dir_num;
     }
   }
   if (argc == 1) {
@@ -66,7 +74,6 @@ int main(int argc, char *argv[]) {
   } else {
     for (int i = 1; i < argc; ++i) {
       if (argv[i][0] == '-') continue;
-      fprintf(stdout, "%s:\n", argv[i]);
       listDirectory(argv[i]);
     }
   }
