@@ -19,6 +19,8 @@ int main(int argc, char *argv[]) {
     if (isDirectory(argv[1])) return printError("cp", argv[1], EISDIR);
 
     FILE *source = fopen(argv[1], "r");
+    if (source == NULL) return printError("cp", argv[1], ENOENT);
+
     char *dest_path = NULL;
     if (isDirectory(argv[2])) {
       int length_1 = strlen(argv[1]);
@@ -49,10 +51,12 @@ int main(int argc, char *argv[]) {
       if (isDirectory(argv[i])) return printError("cp", argv[i], EISDIR);
 
       FILE *source = fopen(argv[i], "r");
+      if (source == NULL) return printError("cp", argv[i], ENOENT);
+
       char *dest_path = (char *) malloc(sizeof(char) * (length_dir + strlen(argv[i]) + 1));
       strcpy(dest_path, argv[argc - 1]);
       dest_path[length_dir] = '/';
-      strcpy(dest_path + 1, argv[i]);
+      strcpy(dest_path + length_dir + 1, argv[i]);
       FILE *dest = fopen(dest_path, "w");
       char *buffer = (char *) malloc(sizeof(char) * 114514);
       int num;
