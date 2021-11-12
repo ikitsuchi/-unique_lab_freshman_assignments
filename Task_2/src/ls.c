@@ -9,15 +9,15 @@ int flag_a = 0;
 int flag_l = 0;
 int dir_num = 0;
 
-int compare(void *x_, void *y_) {
-  char *x = *(char **)x_, *y = *(char **)y_;
+int compare(const void *x_, const void *y_) {
+  char *x = (char *) x_, *y = (char *) y_;
   int len_x = strlen(x), len_y = strlen(y);
   for (int i = 0; i < len_x && i < len_y; ++i) {
     if (isalpha(x[i]) && isalpha(y[i])) {
-      x[i] = tolower(x[i]), y[i] = tolower(y[i]);
-      if (x[i] < y[i])
+      char a = tolower(x[i]), b = tolower(y[i]);
+      if (a < b)
         return -1;
-      else if (x[i] > y[i])
+      else if (a > b)
         return 1;
     } else {
       if (x[i] != y[i]) return (x[i] < y[i]) ? -1 : 1;
@@ -33,7 +33,7 @@ void listDirectory(char dir[]) {
   int count = 0;
   DIR *d = opendir((dir == NULL) ? "." : dir);
   if (d == NULL) {
-    fprintf(stderr, "ls: File or directory not found.\n");
+    fprintf(stderr, "ls: Error.\n");
     return;
   }
   struct dirent *dir_detail;
@@ -48,7 +48,7 @@ void listDirectory(char dir[]) {
 
   if (!flag_a && !flag_l) {
     if (dir_num > 1) fprintf(stdout, "%s:\n", dir);
-    for (int i = 0; i < count; ++i) fprintf(stdout, "%s  ", file_names[i]);
+    for (int i = 0; i < count; ++i) fprintf(stdout, "%s\t", file_names[i]);
     fprintf(stdout, "\n");
   }
   file_names = (char **)realloc(file_names, 0);

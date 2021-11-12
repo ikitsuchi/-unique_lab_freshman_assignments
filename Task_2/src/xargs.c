@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "../incl/builtin.h"
 
 int main(int argc, char *argv[]) {
   if (argc == 1) {
@@ -22,18 +23,21 @@ int main(int argc, char *argv[]) {
     for (j = i; buffer[j] != ' ' && isprint(buffer[j]) && j < stdin_length; ++j);
     exec_argv[exec_argc] = (char *) malloc(sizeof(char) * (j - i + 1));
     strncpy(exec_argv[exec_argc], buffer + i, j - i);
-    exec_argv[exec_argc][j - i] = '\0';
     ++exec_argc;
     i = j;
   }
   for (int i = 2; i < argc; ++i) {
     exec_argv[exec_argc + i - 2] = (char *) malloc(sizeof(char) * strlen(argv[i]));
     strcpy(exec_argv[exec_argc + i - 2], argv[i]);
-    exec_argv[exec_argc][strlen(argv[i])] = '\0';
     ++exec_argc;
   }
 
-  execve(exec_argv[0], exec_argv, NULL);
+  if (!isBuiltin(exec_argv[0])) {
+    if (execvp(exec_argv[0], exec_argv) == -1)
+      fprintf(stderr, "xargs: %s: Command not found.\n", exec_argv[0]);
+  } else {
+    execBuiltin(exec_argv[0], exec_argv);
+  }
   free(buffer);
   return 0;
 }
