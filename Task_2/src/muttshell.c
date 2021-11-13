@@ -11,6 +11,8 @@
 #include "../incl/builtin.h"
 #include "../incl/error.h"
 #include "../incl/prompt.h"
+#include "../incl/env_var.h"
+#include "../incl/exec_command.h"
 
 int argc, cmdc;
 char *argv[128];
@@ -116,26 +118,6 @@ void sigintHandler(int sig) {
 
 void sigchldHandler(int sig) { wait(NULL); }
 
-void initEnv() {
-  /*
-  FILE* fp = fopen(".muttrc", "r");
-  char *env = NULL;
-  size_t length;
-  if (fp == NULL) return;
-  clearenv();
-  while (getline(&env, &length, fp) != -1) {
-    putenv(env);
-  }
-  if (env != NULL) {
-    free(env);
-    env = NULL;
-  }
-  fclose(fp);
-  */
-  clearenv();
-  putenv("PATH=./bin");
-}
-
 void splitCommands(char *instruction) {
   cmdc = 0;
   int length = strlen(instruction);
@@ -214,9 +196,39 @@ int iteratePipe(int id, int prev_pipe_fd) {
     if (pipe(pipe_fd) == -1)
       return printError("muttshell", "create pipe", errno);
 
-    child_pid = fork();
-    if (child_pid == 0) {
-      close(pipe_fd[0]);
+    if (!isBuiltin(argv[0])) {
+      child_pid = fork();
+      if (child_pid == 0) {
+        close(pipe_fd[0]);
+        if (input_flag) {
+          dup2(input_fd, 0);
+          close(input_fd);
+        } else if (io_return == -1) {
+          exit(0);
+        } else {
+          if (id > 0) dup2(prev_pipe_fd, 0);
+        }
+        if (id > 0) close(prev_pipe_fd);
+        if (output_flag) {
+          dup2(output_fd, 1);
+          close(output_fd);
+        } else {
+          if (id < cmdc - 1) dup2(pipe_fd[1], 1);
+        }
+        if (id < cmdc - 1) close(pipe_fd[1]);
+        exec(argv);
+        exit(0);
+      } else {
+        close(pipe_fd[1]);
+        if (id > 0) close(prev_pipe_fd);
+        ioRecovery();
+        for (int j = 0; j < argc; ++j) {
+          free(argv[j]);
+          argv[j] = NULL;
+        }
+        return iteratePipe(id + 1, pipe_fd[0]);
+      }
+    } else {
       if (input_flag) {
         dup2(input_fd, 0);
         close(input_fd);
@@ -234,10 +246,6 @@ int iteratePipe(int id, int prev_pipe_fd) {
       }
       if (id < cmdc - 1) close(pipe_fd[1]);
       exec(argv);
-      exit(0);
-    } else {
-      close(pipe_fd[1]);
-      if (id > 0) close(prev_pipe_fd);
       ioRecovery();
       for (int j = 0; j < argc; ++j) {
         free(argv[j]);
@@ -246,8 +254,43 @@ int iteratePipe(int id, int prev_pipe_fd) {
       return iteratePipe(id + 1, pipe_fd[0]);
     }
   } else {
-    int child_pid = fork();
-    if (child_pid == 0) {
+    if (!isBuiltin(argv[0])) {
+      int child_pid = fork();
+      if (child_pid == 0) {
+        if (input_flag) {
+          dup2(input_fd, 0);
+          close(input_fd);
+        } else if (io_return == -1) {
+          if (id > 0) close(prev_pipe_fd);
+          exit(0);
+        } else {
+          if (id > 0) dup2(prev_pipe_fd, 0);
+        }
+        if (id > 0) close(prev_pipe_fd);
+        if (output_flag) {
+          dup2(output_fd, 1);
+          close(output_fd);
+        } else {
+          dup2(origin_stdout, 1);
+          close(origin_stdout);
+        }
+        exec(argv);
+        exit(0);
+      } else {
+        if (id > 0) close(prev_pipe_fd);
+        if (!background) waitpid(child_pid, NULL, 0);
+        ioRecovery();
+        for (int j = 0; j < argc; ++j) {
+          free(argv[j]);
+          argv[j] = NULL;
+        }
+        dup2(origin_stdin, 0);
+        close(origin_stdin);
+        dup2(origin_stdout, 1);
+        close(origin_stdout);
+        return 0;
+      }
+    } else {
       if (input_flag) {
         dup2(input_fd, 0);
         close(input_fd);
@@ -266,29 +309,7 @@ int iteratePipe(int id, int prev_pipe_fd) {
         close(origin_stdout);
       }
       exec(argv);
-      exit(0);
-    } else {
-      if (id > 0) close(prev_pipe_fd);
-      if (!background) waitpid(child_pid, NULL, 0);
-      ioRecovery();
-      for (int j = 0; j < argc; ++j) {
-        free(argv[j]);
-        argv[j] = NULL;
-      }
-      dup2(origin_stdin, 0);
-      close(origin_stdin);
-      dup2(origin_stdout, 1);
-      close(origin_stdout);
       return 0;
     }
-  }
-}
-
-void exec(char *argv[]) {
-  if (isBuiltin(argv[0])) {
-    execBuiltin(argv[0], argv);
-  } else {
-    if (execvp(argv[0], argv) == -1)
-      fprintf(stderr, "muttshell: %s: Command not found.\n", argv[0]);
   }
 }

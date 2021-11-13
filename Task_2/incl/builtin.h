@@ -5,11 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
+
+#include "../incl/error.h"
+#include "../incl/env_var.h"
 
 #define MUTT_MAX 114514
 
-char *builtin[] = {"echo", "exit", "cd", "pwd"};
+char *builtin[] = {"echo", "exit", "cd", "pwd", "export", "clear"};
 
 int isBuiltin(char argv[]) {
   int return_value = 0;
@@ -28,10 +32,15 @@ void muttEcho(char *argv[]) {
 void muttExit() { exit(0); }
 
 void muttCd(char *argv[]) {
-  if (argv[2] != NULL)
+  if (argv[2] != NULL) {
     fprintf(stderr, "cd: Too many arguments.\n");
-  else if (chdir(argv[1]) != 0)
-    fprintf(stderr, "cd: Error.\n");
+  //} else if (argv[1] == NULL) {
+  //  printf("%s\n", getenv("HOME"));
+   // if (chdir(getenv("HOME")) != 0)
+    //  printError("cd", argv[1], errno);
+  } else if (chdir(argv[1]) != 0) {
+    printError("cd", argv[1], errno);
+  }
 }
 
 void muttPwd() {
@@ -44,17 +53,8 @@ void muttPwd() {
   free(buffer);
 }
 
-int execBuiltin(char command[], char *argv[]) {
-  if (strcmp(command, "echo") == 0) {
-    muttEcho(argv);
-  } else if (strcmp(command, "exit") == 0) {
-    muttExit();
-  } else if (strcmp(command, "cd") == 0) {
-    muttCd(argv);
-  } else if (strcmp(command, "pwd") == 0) {
-    muttPwd(argv);
-  }
-  return 0;
+void muttClear() {
+  fprintf(stdout, "\x1b[H\x1b[J");
 }
 
 #endif

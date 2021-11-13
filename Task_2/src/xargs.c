@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+
 #include "../incl/builtin.h"
+#include "../incl/exec_command.h"
 
 int main(int argc, char *argv[]) {
   if (argc == 1) {
@@ -32,12 +34,7 @@ int main(int argc, char *argv[]) {
     ++exec_argc;
   }
 
-  if (!isBuiltin(exec_argv[0])) {
-    if (execvp(exec_argv[0], exec_argv) == -1)
-      fprintf(stderr, "xargs: %s: Command not found.\n", exec_argv[0]);
-  } else {
-    execBuiltin(exec_argv[0], exec_argv);
-  }
+  exec(exec_argv);
   free(buffer);
   return 0;
 }
