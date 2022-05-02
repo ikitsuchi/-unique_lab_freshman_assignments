@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
 #include "../incl/builtin.h"
 
 int main(int argc, char const *argv[]) {
@@ -50,29 +49,20 @@ int main(int argc, char const *argv[]) {
     mpg123_exit();
     ao_shutdown();
   } else {
-    srand(time(0));
     FILE *fp = fopen("../src/badapple.txt", "r");
     fseek(fp, 0, SEEK_END);
-    int length = ftell(fp);
-    char *full_animation = (char *)malloc(length * sizeof(char));
+    int file_size = ftell(fp);
+    printf("%d\n", file_size);
+    char *full_animation = (char *)malloc(file_size * sizeof(char));
     fseek(fp, 0, SEEK_SET);
-    fread(full_animation, length, sizeof(char), fp);
+    fread(full_animation, file_size, sizeof(char), fp);
     const char *delim = "frame_mark";
     char *frame = strtok(full_animation, delim);
-    if (argc > 1 && strcmp(argv[1], "lunatic") == 0) {
-      srand(time(0));
-      do {
-        muttClear();
-        fprintf(stdout, "\033[1m\033[3%dm\033[4%dm%s\33[0m", rand() % 8, rand() % 8, frame);
-        usleep(114500);
-      } while ((frame = strtok(NULL, delim)) != NULL);
-    } else {
-      do {
-        muttClear();
-        fprintf(stdout, "%s", frame);
-        usleep(114500);
-      } while ((frame = strtok(NULL, delim)) != NULL);
-    }
+    do {
+      muttClear();
+      printf("%s", frame);
+      usleep(114500);
+    } while ((frame = strtok(NULL, delim)) != NULL);
   }
   return 0;
 }

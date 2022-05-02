@@ -21,6 +21,7 @@ void generatePrompt() {
   strcpy(prompt + length, hostname);
   length = strlen(prompt);
   prompt[length++] = ']';
+  strcpy(prompt + length, "￥");
 }
 
 #endif
