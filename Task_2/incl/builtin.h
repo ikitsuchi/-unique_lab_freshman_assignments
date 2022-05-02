@@ -34,11 +34,11 @@ void muttExit() { exit(0); }
 void muttCd(char *argv[]) {
   if (argv[2] != NULL) {
     fprintf(stderr, "cd: Too many arguments.\n");
-  //} else if (argv[1] == NULL) {
-  //  printf("%s\n", getenv("HOME"));
-   // if (chdir(getenv("HOME")) != 0)
-    //  printError("cd", argv[1], errno);
-  } else if (chdir(argv[1]) != 0) {
+  }/* else if (argv[1] == NULL) {
+    printf("%s\n", getenv("HOME"));
+    if (chdir(getenv("HOME")) != 0)
+      printError("cd", argv[1], errno);
+  }*/ else if (chdir(argv[1]) != 0) {
     printError("cd", argv[1], errno);
   }
 }

@@ -13,6 +13,7 @@
 #include "../incl/prompt.h"
 #include "../incl/env_var.h"
 #include "../incl/exec_command.h"
+#include "../incl/color.h"
 
 int argc, cmdc;
 char *argv[128];
@@ -39,15 +40,18 @@ void exec(char *argv[]);
 void sigintHandler(int sig);
 void sigchldHandler(int sig);
 void initEnv();
+void printHello();
 
 int main() {
   signal(SIGINT, sigintHandler);
   signal(SIGCHLD, sigchldHandler);
   initEnv();
   generatePrompt();
+  printHello();
 
   while (1) {
-    instruction = readline(prompt);
+    fprintf(stdout, "\33[0m\033[35m%s\33[0m", prompt);
+    instruction = readline("￥");
     add_history(instruction);
     if (instruction == NULL) {
       fprintf(stdout, "\n");
@@ -61,6 +65,11 @@ int main() {
     origin_stdout = dup(1);
     iteratePipe(0, 0);
     background = 0;
+    ioRecovery();
+    for (int i = 0; i < argc; ++i) {
+      free(argv[i]);
+      argv[i] = NULL;
+    }
     for (int i = 0; i < cmdc; ++i) {
       free(command[i]);
       command[i] = NULL;
@@ -233,7 +242,7 @@ int iteratePipe(int id, int prev_pipe_fd) {
         dup2(input_fd, 0);
         close(input_fd);
       } else if (io_return == -1) {
-        exit(0);
+        return 0;
       } else {
         if (id > 0) dup2(prev_pipe_fd, 0);
       }
@@ -312,4 +321,17 @@ int iteratePipe(int id, int prev_pipe_fd) {
       return 0;
     }
   }
+}
+
+void printHello() {
+  FILE* fp = fopen("./src/hello.txt", "r");
+  size_t length;
+  char *hello = (char *)malloc(2048 * sizeof(char));
+  for (int i = 0; i < 8; ++i) {
+    getline(&hello, &length, fp);
+    fprintf(stdout, "\033[5m\033[1m\033[4%dm\033[3%dm%s\033[40m\033[1m\033[0m", (i + 1) % 8, 7, hello);
+  }
+  fclose(fp);
+  free(hello);
+  fprintf(stdout, "\033[1m\033[33mHello! %s!\033[0m\n", getlogin());
 }
